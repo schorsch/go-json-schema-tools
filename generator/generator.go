@@ -16,7 +16,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"go_sk_api/core/generator/schema_tools"
+	"github.com/schorsch/go-json-schema-tools"
 	"path"
 )
 
