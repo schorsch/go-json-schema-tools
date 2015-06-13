@@ -14,6 +14,7 @@ type Builder struct {
 	PkgName    string
 	ModelName  string
 	SchemaRaw  []byte
+	SchemaJSON  map[string]interface{}
 	Errors     []string
 }
 
@@ -24,33 +25,33 @@ func NewBuilder(inputFile string, modelName string, pkgName string) (builder Bui
 	if err != nil {
 		msg :=  fmt.Sprintf("reading input file: %s", err)
 		builder.Errors = append(builder.Errors, msg)
-	}else{
-		builder.InputFile = inputFile
-		builder.ModelName = modelName
-		builder.PkgName = pkgName
-		builder.SchemaRaw = raw
+		return
+	}
+
+	builder.InputFile = inputFile
+	builder.ModelName = modelName
+	builder.PkgName = pkgName
+	builder.SchemaRaw = raw
+
+	if err := json.Unmarshal(builder.SchemaRaw, &builder.SchemaJSON); err != nil {
+		msg :=  fmt.Sprintf("JSON error: %s", err)
+		builder.Errors = append(builder.Errors, msg)
 	}
 	return
 }
 
 func (b *Builder) Generate() ([]byte, error) {
-	var result map[string]interface{}
-
-	if err := json.Unmarshal(b.SchemaRaw, &result); err != nil {
-		//TODO add fail to builder.Error
-		return nil, err
-	}
-
+	//TODO add builder.Error without b.SchemaJSON
 	src := b.addHeadInfo()
 
 	// add comment from schema[description]
-	if result["description"] !=nil {
-		src += fmt.Sprintf("// %s\n", result["description"])
+	if b.SchemaJSON["description"] !=nil {
+		src += fmt.Sprintf("// %s\n", b.SchemaJSON)
 	}
 
 	//TODO if b.PkgName empty set from schmema[title]
 	src += fmt.Sprintf("package %s\n", b.PkgName)
-	props := NewProperties(result)
+	props := NewProperties(b.SchemaJSON)
 	//TODO if b.ModelName empty set from schmema[title]
 	src += fmt.Sprintf("type %s struct {%s}", b.ModelName, props.ToStruct())
 	// TODO add getter & setter methods
