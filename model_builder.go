@@ -3,8 +3,10 @@ package json_schema_tools
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"go/format"
 	"io/ioutil"
+	"bitbucket.org/pkg/inflect"
 //	"log"
 )
 
@@ -18,25 +20,42 @@ type Builder struct {
 	Errors     []string
 }
 
+//NewBuilder creates a build instance using the JSON schema data from the given filename. If modelName and/or pkgName
+//are left empty the title-attribute of the JSON schema is used for:
+// => struct-name (singular, camelcase e.g contact => Contact)
+// => package name (pluralize, lowercased e.g. payment_reminder => paymentreminders)
 func NewBuilder(inputFile string, modelName string, pkgName string) (builder Builder) {
 	builder = Builder{}
-	// try to read the given filename
+	// try to read input file
 	raw, err := ioutil.ReadFile(inputFile)
 	if err != nil {
-		msg :=  fmt.Sprintf("reading input file: %s", err)
+		msg :=  fmt.Sprintf("File error: %s", err)
+		builder.Errors = append(builder.Errors, msg)
+		return
+	}
+	builder.InputFile = inputFile
+	builder.SchemaRaw = raw
+	// try parsing json
+	if err := json.Unmarshal(builder.SchemaRaw, &builder.SchemaJSON); err != nil {
+		msg :=  fmt.Sprintf("JSON error: %s", err)
 		builder.Errors = append(builder.Errors, msg)
 		return
 	}
 
-	builder.InputFile = inputFile
-	builder.ModelName = modelName
-	builder.PkgName = pkgName
-	builder.SchemaRaw = raw
-
-	if err := json.Unmarshal(builder.SchemaRaw, &builder.SchemaJSON); err != nil {
-		msg :=  fmt.Sprintf("JSON error: %s", err)
-		builder.Errors = append(builder.Errors, msg)
+	// defer model name from schema.title if not given as argument, schema['title'] MUST be set
+	if len(modelName) > 0 {
+		builder.ModelName = modelName
+	}else{
+		builder.ModelName = inflect.Typeify(builder.SchemaJSON["title"].(string))
 	}
+	// defer package name from schema.title if not given as argument
+	if len(pkgName) > 0 {
+		builder.PkgName = pkgName
+	}else{
+		//Pluralize no underscores
+		builder.PkgName = strings.ToLower(inflect.Camelize(inflect.Pluralize(builder.SchemaJSON["title"].(string))))
+	}
+
 	return
 }
 
@@ -57,7 +76,8 @@ func (b *Builder) Generate() ([]byte, error) {
 	// TODO add getter & setter methods
 	formatted, err := format.Source([]byte(src))
 	if err != nil {
-		err = fmt.Errorf("error formatting: %s, was formatting\n%s", err, src)
+		msg :=  fmt.Sprintf("error formatting: %s, was formatting\n%s", err, src)
+		b.Errors = append(b.Errors, msg)
 	}
 	return formatted, err
 }

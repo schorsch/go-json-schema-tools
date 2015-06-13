@@ -1,0 +1,8 @@
+{"type":"object",
+  "title": "invalid_json",
+  "properties":
+    "number":{
+      "type":"string",
+      "maxLength": 50
+    }
+}
