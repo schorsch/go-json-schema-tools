@@ -36,7 +36,7 @@ func TestNewBuilderError(t *testing.T) {
 func TestGenerate(t *testing.T) {
 
 	builder := NewBuilder("test_schema/contact.json", "Contact", "contacts")
-	str,_ := builder.Generate()
+	str := builder.Generate()
 	if !strings.Contains(string(str), "package contacts") {
 		t.Error("Expected package definition, got: ", string(str))
 	}

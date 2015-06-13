@@ -24,7 +24,7 @@ func NewProperties(obj map[string]interface{}) Properties {
 	properties := make(Properties, 0, len(fields))
 	// for each property
 	for name, values := range fields {
-        prop := NewProperty(name, values.(map[string]interface{}) )
+		prop := NewProperty(name, values.(map[string]interface{}))
 		properties = append(properties, &prop)
 	}
 	return properties

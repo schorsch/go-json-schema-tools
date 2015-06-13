@@ -9,7 +9,7 @@ type Property struct {
 	FieldName string
 	ValueType string
 	Name      string
-	RawValues  map[string]interface{}
+	RawValues map[string]interface{}
 }
 
 //NewProperty creates a Property from a json string
@@ -17,13 +17,12 @@ func NewProperty(name string, values map[string]interface{}) Property {
 
 	prop := Property{
 		Name:      name,
-		RawValues:  values,
+		RawValues: values,
 		FieldName: inflect.Camelize(name),
 	}
 	prop.setType()
 	return prop
 }
-
 
 //setType from the type declared in raw values
 func (p *Property) setType() {
